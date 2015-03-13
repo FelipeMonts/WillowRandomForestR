@@ -1,9 +1,11 @@
 #Felipe Montes
-#2014 03 17
+#Updated 2015 03 02 to reflect new additions in the original database
+
 
 #Program to incorporate data from excel and analyze it using the Random Forest Methodology
 
-setwd("C:/Felipe/Willow Project/Willow Random Forest")
+setwd("C:/Felipe/GitHub/WillowRandomForestR")
+#setwd("C:/Felipe/Willow Project/Willow Random Forest")
 
 #setwd("G:/Willow Random Forest")
 
@@ -27,7 +29,7 @@ library(RColorBrewer)
 
 #Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
 
-Willow.data<-readWorksheetFromFile("Biomass Across Sites Master File 2014-02-13.xlsx", sheet = "Full data", startRow = 0, startCol = 0)
+Willow.data<-readWorksheetFromFile("Willow G X E yield & composition database 2015_02_11.xlsx", sheet = "CombinedDataset", startRow = 0, startCol = 0)
 
 names(Willow.data)
 

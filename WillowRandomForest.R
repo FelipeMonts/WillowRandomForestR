@@ -4,7 +4,7 @@
 
 #Program to incorporate data from excel and analyze it using the Random Forest Methodology
 
-setwd("C:/Felipe/GitHub/WillowRandomForestR")
+setwd("C:/Felipe/GitHub/WillowRandomForestR");
 #setwd("C:/Felipe/Willow Project/Willow Random Forest")
 
 #setwd("G:/Willow Random Forest")
@@ -18,57 +18,85 @@ setwd("C:/Felipe/GitHub/WillowRandomForestR")
 # Call Packages
 
 
-library(XLConnect)
+library(XLConnect);
 
-library(randomForest)
+library(randomForest);
 
-library(boot)
+library(boot);
 
-library(lattice)
-library(RColorBrewer)
+library(lattice);
+library(RColorBrewer);
 
 #Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
 
-Willow.data<-readWorksheetFromFile("Willow G X E yield & composition database 2015_02_11.xlsx", sheet = "CombinedDataset", startRow = 0, startCol = 0)
+Willow.data<-readWorksheetFromFile("WillowGXE2015_02_11_FM.xlsx", sheet = "CombinedDataset", startRow = 0, startCol = 0);
 
-names(Willow.data)
+Willow.data.names <-names(Willow.data);
 
-Willow.data<-Willow.data[,1:21]
+str(Willow.data)
 
-
-#Rename the variables
-names(Willow.data)<-c("Year","Clone","Site","Repetition","Hemicellulose","Cellulose","Lignin","Ash","Density_g_cm3","Yield_Mg_ha_yr","Moisture","Soil_OrganicMatter","Soil_pH","Soil_Aluminum","Soil_Calcium","Soil_Iron","Soil_Potassium","Soil_Magnesium","Soil_Manganese","Soil_Zinc","Soil_Phosphorous")
+# Willow.data<-Willow.data[,1:21]
 
 
-Response.variables<-c("Hemicellulose","Cellulose","Lignin","Ash","Density_g_cm3","Yield_Mg_ha_yr","Moisture")
-Dependent.variables<-names(Willow.data)[!names(Willow.data) %in% Response.variables]
-Factor.variables<-c("Clone","Site","Repetition")
+#Explore the completness of the data and the apearance of NA values or similar
+
+
+# #Rename the variables
+# names(Willow.data)<-c("Year","Clone","Site","Repetition","Hemicellulose","Cellulose","Lignin","Ash","Density_g_cm3","Yield_Mg_ha_yr","Moisture","Soil_OrganicMatter","Soil_pH","Soil_Aluminum","Soil_Calcium","Soil_Iron","Soil_Potassium","Soil_Magnesium","Soil_Manganese","Soil_Zinc","Soil_Phosphorous")
+
+
+# Group the variables into predictive variables and Response Variables
+
+Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.","Rep","Clone.ID","Comments");
+
+Predictor.variables<-c("X..Organic.Matter", "Soil.pH", "X.H..", "Soil.P..mg.kg.", "Soil.K..mg.kg.", "Soil.Ca..mg.kg.","Soil.Mg..mg.kg.", "Soil.Fe..mg.kg.", "Soil.Mn..mg.kg.", "Soil.Zn..mg.kg.","Soil.Al..mg.kg.", "Mean.ann.prcp..mm.", "Mean.ann.GDD..base.10oC.", "Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.", "Annual.Tmin..oC.", "Depth.to.water.table.low.cm.", "Depth.to.Water.Table.high.cm.", "Available.water.capacity..cm.cm."); #, "Height..m.", "Area.per.plot..cm2.");
+
+Predictor.variables.factors<-c("Epithet","Family","New.Diversity.Group","Clone..SAS.","Ploidy.level","Land.capability.class","LC.subclass");
+Response.variables<-c( "Survival....","Surviv.prop","Wet.Yield..Mg.ha.","Biomass...Moisture","Biomass.Moisture.prop","Biomas...dry.matter","Biomass.dry.matter.prop","Dry.Yield..Mg.ha.","Annual.Yield..Mg.ha.yr.","Dry.tons.ac","Dry.tons.ac.yr","X..Hemicellulose","X..Cellulose","X..Lignin", "X..Ash", "Density..g.cm3.", "Hemicellulose.yield", "Cellulose.yield", "Lignin.yield", "Ash.yield");
+
+
+
+
+
+# Dependent.variables<-names(Willow.data)[!names(Willow.data) %in% Response.variables]
+# Factor.variables<-c("Clone","Site","Repetition")
 
 #conditioning the data for processing
 
 # the data has many missing values that are represented as a ".". Therefore it is needed to locate them and extract the rest of the data
 
 
-#Making variables numeric
+#Making variables numeric or factors depending on the structure of the variable
 
-Willow.data[,Response.variables]<-sapply(Willow.data[,Response.variables],as.numeric)
+Willow.data[,Descriptor.variables]<-lapply(Willow.data[,Descriptor.variables],as.factor);
 
-Willow.data[,11:21]<-sapply(Willow.data[,11:21],as.numeric)
+Willow.data[,Predictor.variables]<-sapply(Willow.data[,Predictor.variables],as.numeric);
+
+Willow.data[,Predictor.variables.factors]<-lapply(Willow.data[,Predictor.variables.factors],as.factor);
+
+Willow.data[,Response.variables]<-sapply(Willow.data[,Response.variables],as.numeric);
 
 
-#convert Qualitative Predictor variables as factors
-Willow.data[,"Clone"]<-as.factor(Willow.data[,"Clone"])
-Willow.data[,"Site"]<-as.factor(Willow.data[,"Site"])
-Willow.data[,"Repetition"]<-as.factor(Willow.data[,"Repetition"])
+# After converting the data to numeric and factors check for NA values in the data
+
+Willow.data.NA<-as.data.frame(is.na(Willow.data)+0);
+
+sapply(Willow.data.NA, hist,breaks=2);
+
+
+
+
+
+
+
+
 
 
 #sumarize the data for exploration
+histogram(Willow.data$Establish.Year, type='count',labels=T);
+names(Willow.data.NA)
 
-summary(Willow.data)
 
-summary(Willow.data$Clone)
-
-histogram(Willow.data$Clone)
 
 #The data has many typos that need corrections i.e. "SX61" and "SX61 " are considered different
 

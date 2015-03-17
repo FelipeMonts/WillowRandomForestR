@@ -25,7 +25,10 @@ library(randomForest);
 library(boot);
 
 library(lattice);
+
 library(RColorBrewer);
+
+library(gplots);
 
 #Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
 
@@ -47,19 +50,13 @@ str(Willow.data)
 
 # Group the variables into predictive variables and Response Variables
 
-Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.","Rep","Clone.ID","Comments");
+Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.","Rep","Comments");
 
 Predictor.variables<-c("X..Organic.Matter", "Soil.pH", "X.H..", "Soil.P..mg.kg.", "Soil.K..mg.kg.", "Soil.Ca..mg.kg.","Soil.Mg..mg.kg.", "Soil.Fe..mg.kg.", "Soil.Mn..mg.kg.", "Soil.Zn..mg.kg.","Soil.Al..mg.kg.", "Mean.ann.prcp..mm.", "Mean.ann.GDD..base.10oC.", "Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.", "Annual.Tmin..oC.", "Depth.to.water.table.low.cm.", "Depth.to.Water.Table.high.cm.", "Available.water.capacity..cm.cm."); #, "Height..m.", "Area.per.plot..cm2.");
 
-Predictor.variables.factors<-c("Epithet","Family","New.Diversity.Group","Clone..SAS.","Ploidy.level","Land.capability.class","LC.subclass");
+Predictor.variables.factors<-c("Clone.ID","Epithet","Family","New.Diversity.Group","Clone..SAS.","Ploidy.level","Land.capability.class","LC.subclass");
 Response.variables<-c( "Survival....","Surviv.prop","Wet.Yield..Mg.ha.","Biomass...Moisture","Biomass.Moisture.prop","Biomas...dry.matter","Biomass.dry.matter.prop","Dry.Yield..Mg.ha.","Annual.Yield..Mg.ha.yr.","Dry.tons.ac","Dry.tons.ac.yr","X..Hemicellulose","X..Cellulose","X..Lignin", "X..Ash", "Density..g.cm3.", "Hemicellulose.yield", "Cellulose.yield", "Lignin.yield", "Ash.yield");
 
-
-
-
-
-# Dependent.variables<-names(Willow.data)[!names(Willow.data) %in% Response.variables]
-# Factor.variables<-c("Clone","Site","Repetition")
 
 #conditioning the data for processing
 
@@ -79,50 +76,83 @@ Willow.data[,Response.variables]<-sapply(Willow.data[,Response.variables],as.num
 
 # After converting the data to numeric and factors check for NA values in the data
 
-Willow.data.NA<-as.data.frame(is.na(Willow.data)+0);
+# Descriptor variables
 
-sapply(Willow.data.NA, hist,breaks=2);
+Willow.data.NA.Descriptor<-as.data.frame(is.na(Willow.data[,Descriptor.variables])+0);
+Willow.data.NA.Descriptor.sum<-sapply(Willow.data.NA.Descriptor,sum);
+barplot(Willow.data.NA.Descriptor.sum,names.arg=names(Willow.data.NA.Descriptor.sum),horiz=F,las=2, main="Distribution of NA values");
+
+# Predictor Variables
+
+Willow.data.NA.Predictor<-as.data.frame(is.na(Willow.data[,Predictor.variables])+0);
+Willow.data.NA.Predictor.sum<-sapply(Willow.data.NA.Predictor,sum);
+barplot(Willow.data.NA.Predictor.sum,names.arg=names(Willow.data.NA.Predictor.sum),horiz=F,las=2, main="Distribution of NA values");
+
+# Predictor Variables factors
+
+Willow.data.NA.Predictor.factors<-as.data.frame(is.na(Willow.data[,Predictor.variables.factors])+0);
+Willow.data.NA.Predictor.factors.sum<-sapply(Willow.data.NA.Predictor.factors,sum);
+barplot(Willow.data.NA.Predictor.factors.sum,names.arg=names(Willow.data.NA.Predictor.factors.sum),horiz=F,las=2, main="Distribution of NA values");
+
+
+# Response variables
+
+Willow.data.NA.Response<-as.data.frame(is.na(Willow.data[,Response.variables])+0);
+Willow.data.NA.Response.sum<-sapply(Willow.data.NA.Response,sum);
+barplot(Willow.data.NA.Response.sum,names.arg=names(Willow.data.NA.Response.sum),horiz=F,las=2, main="Distribution of NA values");
 
 
 
 
+# Based on the bar plot there are several variables with NA values  how to handle them?
 
 
 
+# check for typos invariables and factors:
+
+for (i in Descriptor.variables ) {
+  print(histogram(Willow.data[,i],xlab=i,type='count'));
+}
+  
+
+for (i in Predictor.variables.factors ) {
+  print(histogram(Willow.data[,i],xlab=i,type='count'));
+}
+   
+
+# There are a couple of Clone..SAS.  with few entries:"01X265020" "01X266016"
+dim(Willow.data[Willow.data$Clone..SAS.=="01X265020",])[1];
+dim(Willow.data[Willow.data$Clone..SAS.=="01X266016",])[1];
+
+# New.Diversity.Group 3 has very few entries as well
+dim(Willow.data[Willow.data$New.Diversity.Group=="3",])[1];
+
+# There are very limited entries for land capability clases 4 and 5
+
+dim(Willow.data[Willow.data$Land.capability.class=="4",])[1];
+dim(Willow.data[Willow.data$Land.capability.class=="5",])[1];
+
+# Since the study tries to analyze Genotype by environment, lest see which Genotypes are in which sites
+CloneXSite<-xtabs(formula=~Clone.ID +Site..SAS., data=Willow.data);
+
+heatmap(CloneXSite,scale='none');
+
+# Using the package gplots can improve the heat map
+
+h.palette<-brewer.pal(3,"YlGnBu")
+heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
+
+CloneSasXSite<-xtabs(formula=~Clone..SAS.+Site..SAS., data=Willow.data);
+
+h.palette<-brewer.pal(3,"YlOrRd")
+heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
 
 
+#We can also see which ploidy level is in each site  "Clone.ID","Epithet","Family" "Ploidy.level"
 
-#sumarize the data for exploration
-histogram(Willow.data$Establish.Year, type='count',labels=T);
-names(Willow.data.NA)
-
-
-
-#The data has many typos that need corrections i.e. "SX61" and "SX61 " are considered different
-
-Willow.data[Willow.data$Clone=="SX61 ","Clone"]<-"SX61"
-Willow.data[Willow.data$Clone=="SX64 ","Clone"]<-"SX64"
-Willow.data[Willow.data$Clone=="SX67 ","Clone"]<-"SX67"
-
-#remove clone 0X032096 which only have one observation and clone 988224 which only has 4 observations
-
-#Revert the column "Clone" from Factor to character 
-
-Willow.data[,"Clone"]<-as.character(Willow.data[,"Clone"])
-
-#remove clone 0X032096
-Willow.data<-Willow.data[!Willow.data$Clone=="0X032096",]
-
-#remove clone 988224
-Willow.data<-Willow.data[!Willow.data$Clone=="988224",]
-
-# With the data Typos corrected redo the Factor
-
-Willow.data[,"Clone"]<-as.factor(as.character(Willow.data[,"Clone"]))
-
-#Plot the data for exploration
-
-histogram(Willow.data$Clone)
+PloidyXsite<-xtabs(formula=~Ploidy.level+Site..SAS., data=Willow.data);
+h.palette<-brewer.pal(3,"BuGn")
+heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
 
 
 #first Analysis random Forest

@@ -1,5 +1,6 @@
-#Felipe Montes
-#Updated 2015 03 02 to reflect new additions in the original database
+# Felipe Montes
+# Updated 2015 03 02 to reflect new additions in the original database 
+# Working on database description
 
 
 #Program to incorporate data from excel and analyze it using the Random Forest Methodology

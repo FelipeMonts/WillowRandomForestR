@@ -1,5 +1,6 @@
 # Felipe Montes
 # Updated 2015 03 02 to reflect new additions in the original database 
+# Updated 2015 03 25 to include the latests changes added data to the database
 
 
 
@@ -31,22 +32,19 @@ library(RColorBrewer);
 
 library(gplots);
 
-#Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
+# Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
 
-Willow.data<-readWorksheetFromFile("WillowGXE2015_02_11_FM.xlsx", sheet = "CombinedDataset", startRow = 0, startCol = 0);
+# Reading the data from the excel file: C:\Felipe\GitHub\WillowRandomForestR\WillowGXE2015_02_11_FM.xlsx
+
+# Willow.data<-readWorksheetFromFile("WillowGXE2015_02_11_FM.xlsx", sheet = "CombinedDataset", startRow = 0, startCol = 0);
+
+# Readin the data from the excel file: C:\Felipe\GitHub\WillowRandomForestR\Willow G X E yield & composition database 2015_03_18.xlsx
+
+Willow.data<-readWorksheetFromFile("C:/Felipe/GitHub/WillowRandomForestR/Willow G X E yield & composition database 2015_03_18.xlsx", sheet = "Combined dataset (2)", startRow = 0, startCol = 0, endCol=60);
 
 Willow.data.names <-names(Willow.data);
 
 str(Willow.data)
-
-# Willow.data<-Willow.data[,1:21]
-
-
-#Explore the completness of the data and the apearance of NA values or similar
-
-
-# #Rename the variables
-# names(Willow.data)<-c("Year","Clone","Site","Repetition","Hemicellulose","Cellulose","Lignin","Ash","Density_g_cm3","Yield_Mg_ha_yr","Moisture","Soil_OrganicMatter","Soil_pH","Soil_Aluminum","Soil_Calcium","Soil_Iron","Soil_Potassium","Soil_Magnesium","Soil_Manganese","Soil_Zinc","Soil_Phosphorous")
 
 
 # Group the variables into predictive variables and Response Variables
@@ -89,6 +87,13 @@ Willow.data.NA.Predictor<-as.data.frame(is.na(Willow.data[,Predictor.variables])
 Willow.data.NA.Predictor.sum<-sapply(Willow.data.NA.Predictor,sum);
 barplot(Willow.data.NA.Predictor.sum,names.arg=names(Willow.data.NA.Predictor.sum),horiz=F,las=2, main="Distribution of NA values");
 
+# Change the lower marging to allow the names to be read. par (mar) is a global variable 
+par(mar=c(10,4,4,2));
+
+barplot(Willow.data.NA.Predictor.sum,names.arg=names(Willow.data.NA.Predictor.sum),horiz=F,las=2, main="Distribution of NA values");
+
+
+
 # Predictor Variables factors
 
 Willow.data.NA.Predictor.factors<-as.data.frame(is.na(Willow.data[,Predictor.variables.factors])+0);
@@ -115,13 +120,29 @@ for (i in Descriptor.variables ) {
   print(histogram(Willow.data[,i],xlab=i,type='count'));
 }
   
+# Change the directions of the x axis labels allow the names to be read. par (las) is a global variable 
+par(las=2);
 
 for (i in Predictor.variables.factors ) {
-  print(histogram(Willow.data[,i],xlab=i,type='count'));
+  print(histogram(Willow.data[,i],xlab=i,type='count',scales=list(x=list(rot=90))));
 }
-   
+
+# There are  Ploidy levels with named "???"
+
+dim(Willow.data[Willow.data$Ploidy.level=="???",])[1];
+
+Willow.data[Willow.data$Ploidy.level=="???",]
+
+
 
 # There are a couple of Clone..SAS.  with few entries:"01X265020" "01X266016"
+
+h.clones<-histogram(Willow.data[,'Clone..SAS.'],xlab="Clone..SAS",type='count',scales=list(x=list(rot=90)));
+
+str(h.clones)
+h.clones$x.scales$rot=c(T,T)
+
+
 dim(Willow.data[Willow.data$Clone..SAS.=="01X265020",])[1];
 dim(Willow.data[Willow.data$Clone..SAS.=="01X266016",])[1];
 

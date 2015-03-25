@@ -32,6 +32,8 @@ library(RColorBrewer);
 
 library(gplots);
 
+library(ggplot2);
+
 # Reading the data from the excel file with the data from: C:\Felipe\Willow Project\Willow Random Forest\Biomass Across Sites Master File 2014-02-13.xlsx
 
 # Reading the data from the excel file: C:\Felipe\GitHub\WillowRandomForestR\WillowGXE2015_02_11_FM.xlsx
@@ -117,64 +119,63 @@ barplot(Willow.data.NA.Response.sum,names.arg=names(Willow.data.NA.Response.sum)
 # check for typos invariables and factors:
 
 for (i in Descriptor.variables ) {
-  print(histogram(Willow.data[,i],xlab=i,type='count'));
-}
-  
-# Change the directions of the x axis labels allow the names to be read. par (las) is a global variable 
-par(las=2);
-
-for (i in Predictor.variables.factors ) {
   print(histogram(Willow.data[,i],xlab=i,type='count',scales=list(x=list(rot=90))));
 }
+  
 
-# There are  Ploidy levels with named "???"
-
-dim(Willow.data[Willow.data$Ploidy.level=="???",])[1];
-
-Willow.data[Willow.data$Ploidy.level=="???",]
-
-
-
-# There are a couple of Clone..SAS.  with few entries:"01X265020" "01X266016"
-
-h.clones<-histogram(Willow.data[,'Clone..SAS.'],xlab="Clone..SAS",type='count',scales=list(x=list(rot=90)));
-
-str(h.clones)
-h.clones$x.scales$rot=c(T,T)
-
-
-dim(Willow.data[Willow.data$Clone..SAS.=="01X265020",])[1];
-dim(Willow.data[Willow.data$Clone..SAS.=="01X266016",])[1];
-
-# New.Diversity.Group 3 has very few entries as well
-dim(Willow.data[Willow.data$New.Diversity.Group=="3",])[1];
+for (i in Predictor.variables.factors ) {
+  print(histogram(Willow.data[,i],xlab=i,type='count',labels=TRUE,scales=list(x=list(rot=90))));
+  # scales$rot is used to rotate the axis labels 90 degrees
+}
 
 # There are very limited entries for land capability clases 4 and 5
 
 dim(Willow.data[Willow.data$Land.capability.class=="4",])[1];
 dim(Willow.data[Willow.data$Land.capability.class=="5",])[1];
 
-# Since the study tries to analyze Genotype by environment, lest see which Genotypes are in which sites
+# There are  Ploidy levels with named "???" ###
+
+dim(Willow.data[Willow.data$Ploidy.level=="???",])[1];
+
+Willow.data[Willow.data$Ploidy.level=="???",];
+
+
+# There are a couple of Clone..SAS.  with few entries
+Clone..SAS.sum<-summary(Willow.data$Clone..SAS.);
+
+Clone..SAS.sum[which(Clone..SAS.sum <= 4)];
+
+# A few new.Diversity.Group have very few entries as well
+Diversity.sum<-summary(Willow.data$New.Diversity.Group);
+
+Diversity.sum[which(Diversity.sum <= 10)];
+
+
+# try heat maps to see where the missing values are in the dataset
+
+
+# Since the study tries to analyze Genotype by environment, lets see which Genotypes are in which sites
 CloneXSite<-xtabs(formula=~Clone.ID +Site..SAS., data=Willow.data);
 
 heatmap(CloneXSite,scale='none');
 
 # Using the package gplots can improve the heat map
 
-h.palette<-brewer.pal(3,"YlGnBu")
-heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
+h.palette<-brewer.pal(4,"YlGnBu")
+heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
+
 
 CloneSasXSite<-xtabs(formula=~Clone..SAS.+Site..SAS., data=Willow.data);
-
-h.palette<-brewer.pal(3,"YlOrRd")
-heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
+heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
 
 
 #We can also see which ploidy level is in each site  "Clone.ID","Epithet","Family" "Ploidy.level"
 
 PloidyXsite<-xtabs(formula=~Ploidy.level+Site..SAS., data=Willow.data);
-h.palette<-brewer.pal(3,"BuGn")
-heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,3,4,7),col=h.palette);
+
+heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
+
+
 
 
 #first Analysis random Forest

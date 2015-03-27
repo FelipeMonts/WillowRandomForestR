@@ -159,21 +159,21 @@ CloneXSite<-xtabs(formula=~Clone.ID +Site..SAS., data=Willow.data);
 
 heatmap(CloneXSite,scale='none');
 
-# Using the package gplots can improve the heat map
+# Using the heatmap2 can improve the heat map
 
 h.palette<-brewer.pal(4,"YlGnBu")
-heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
+heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="Clone X Site");
 
 
 CloneSasXSite<-xtabs(formula=~Clone..SAS.+Site..SAS., data=Willow.data);
-heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
+heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="CloneSAS  X SiteSAS");
 
 
 #We can also see which ploidy level is in each site  "Clone.ID","Epithet","Family" "Ploidy.level"
 
 PloidyXsite<-xtabs(formula=~Ploidy.level+Site..SAS., data=Willow.data);
 
-heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette);
+heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="Ploidy X SiteSAS");
 
 
 

@@ -6,8 +6,7 @@
 
 #Program to incorporate data from excel and analyze it using the Random Forest Methodology
 
-setwd("C:/Felipe/GitHub/WillowRandomForestR");
-#setwd("C:/Felipe/Willow Project/Willow Random Forest")
+setwd("C:/Felipe/Willow Project/Willow Random Forest")
 
 #setwd("G:/Willow Random Forest")
 
@@ -42,16 +41,24 @@ library(ggplot2);
 
 # Readin the data from the excel file: C:\Felipe\GitHub\WillowRandomForestR\Willow G X E yield & composition database 2015_03_18.xlsx
 
-Willow.data<-readWorksheetFromFile("C:/Felipe/GitHub/WillowRandomForestR/Willow G X E yield & composition database 2015_03_18.xlsx", sheet = "Combined dataset (2)", startRow = 0, startCol = 0, endCol=60);
+Willow.data<-readWorksheetFromFile("Willow G X E yield & composition database 2015_03_18.xlsx", sheet = "Combined dataset (2)", startRow = 0, startCol = 0, endCol=60);
 
 Willow.data.names <-names(Willow.data);
 
-str(Willow.data)
+str(Willow.data);
 
+# Location is not added separately; Site..SAS, but it has the year associated with. Create a new Variable called Location that only accounts for the location independent of year
+
+# Split the Trial.ID information based on the character "_" i.e: "BellevilleNY_2005_YT" results in a three component list "BellevilleNY" "2005"         "YT". 
+Location<-strsplit(as.character(Willow.data$Trial.ID), "_");
+
+# Extracting the first component in the list Location and addig to the data frame
+
+Willow.data$Location<-sapply(Location, "[[", 1);
 
 # Group the variables into predictive variables and Response Variables
 
-Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.","Rep","Comments");
+Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.", "Location","Rep","Comments");
 
 Predictor.variables<-c("X..Organic.Matter", "Soil.pH", "X.H..", "Soil.P..mg.kg.", "Soil.K..mg.kg.", "Soil.Ca..mg.kg.","Soil.Mg..mg.kg.", "Soil.Fe..mg.kg.", "Soil.Mn..mg.kg.", "Soil.Zn..mg.kg.","Soil.Al..mg.kg.", "Mean.ann.prcp..mm.", "Mean.ann.GDD..base.10oC.", "Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.", "Annual.Tmin..oC.", "Depth.to.water.table.low.cm.", "Depth.to.Water.Table.high.cm.", "Available.water.capacity..cm.cm."); #, "Height..m.", "Area.per.plot..cm2.");
 
@@ -128,6 +135,7 @@ for (i in Predictor.variables.factors ) {
   # scales$rot is used to rotate the axis labels 90 degrees
 }
 
+
 # There are very limited entries for land capability clases 4 and 5
 
 dim(Willow.data[Willow.data$Land.capability.class=="4",])[1];
@@ -157,23 +165,54 @@ Diversity.sum[which(Diversity.sum <= 10)];
 # Since the study tries to analyze Genotype by environment, lets see which Genotypes are in which sites
 CloneXSite<-xtabs(formula=~Clone.ID +Site..SAS., data=Willow.data);
 
-heatmap(CloneXSite,scale='none');
-
 # Using the heatmap2 can improve the heat map
 
-h.palette<-brewer.pal(4,"YlGnBu")
-heatmap.2(CloneXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="Clone X Site");
+
+h.palette<-colorRampPalette(c("yellow","blue","green"));
+
+heatmap.2(CloneXSite,scale='none', dendrogram='none',col=h.palette, main="Clone X Site");
 
 
-CloneSasXSite<-xtabs(formula=~Clone..SAS.+Site..SAS., data=Willow.data);
-heatmap.2(CloneSasXSite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="CloneSAS  X SiteSAS");
+
+CloneSasXLocation<-xtabs(formula=~Clone..SAS.+Location, data=Willow.data);
+
+heatmap.2(CloneSasXLocation,scale='none', dendrogram='none',col=h.palette, main="CloneSAS  X Location");
 
 
-#We can also see which ploidy level is in each site  "Clone.ID","Epithet","Family" "Ploidy.level"
 
-PloidyXsite<-xtabs(formula=~Ploidy.level+Site..SAS., data=Willow.data);
+#We can also see which "Ploidy.level" "Epithet","Family" "Ploidy.level" level is in each site  
 
-heatmap.2(PloidyXsite,scale='none', dendrogram='none',breaks=c(0,1,2,3,4),col=h.palette, main="Ploidy X SiteSAS");
+PloidyXSite<-xtabs(formula=~Ploidy.level+Site..SAS., data=Willow.data);
+
+heatmap.2(PloidyXSite,scale='none', dendrogram='none',col=h.palette, main="Ploidy X SiteSAS");
+
+
+PloidyXLocation<-xtabs(formula=~Ploidy.level+Location, data=Willow.data);
+
+heatmap.2(PloidyXLocation,scale='none', dendrogram='none',col=h.palette, main="Ploidy X Location");
+
+EpithetXSite<-xtabs(formula=~Epithet+Site..SAS., data=Willow.data);
+
+heatmap.2(EpithetXSite,scale='none', dendrogram='none',col=h.palette, main="Epithet X SiteSAS");
+
+EpithetXLocation<-xtabs(formula=~Epithet+Location, data=Willow.data);
+
+heatmap.2(EpithetXLocation,scale='none', dendrogram='none',col=h.palette, main="Epithet X Location");
+
+FamilyXLocation<-xtabs(formula=~Family+Location, data=Willow.data);
+
+heatmap.2(FamilyXLocation,scale='none', dendrogram='none',col=h.palette, main="Family X Location");
+
+
+# Exploring other variables data completness with heat maps
+
+CloneXLocation<-xtabs(formula=~Clone.ID+Location, data=Willow.data);
+
+heatmap.2(CloneXLocation,scale='none', dendrogram='none',col=h.palette, main="Clone X Location");
+
+CloneIDXSurvival<-xtabs(formula=~Clone.ID+Survival...., data=Willow.data);
+
+heatmap.2(CloneIDXSurvival,scale='none', dendrogram='none',col=h.palette,breaks=c main="Clone.ID  X Survival");
 
 
 

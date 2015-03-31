@@ -210,9 +210,41 @@ CloneXLocation<-xtabs(formula=~Clone.ID+Location, data=Willow.data);
 
 heatmap.2(CloneXLocation,scale='none', dendrogram='none',col=h.palette, main="Clone X Location");
 
-CloneIDXSurvival<-xtabs(formula=~Clone.ID+Survival...., data=Willow.data);
+# We can use is.na to transform survival data into a 1 or 0 data type and the use tables or xtabs to create heat maps
 
-heatmap.2(CloneIDXSurvival,scale='none', dendrogram='none',col=h.palette,breaks=c main="Clone.ID  X Survival");
+# SURVIVAL DATA
+
+Survival.data<-data.frame(abs(is.na(Willow.data$Survival....)-1),Willow.data$Survival....,Willow.data$Clone.ID,Willow.data$Location);
+names(Survival.data)<-c("Is.data", "Survival","Clone.ID","Location");
+
+Survival.tab<-xtabs(Is.data~Clone.ID+Location,Survival.data);
+heatmap.2(Survival.tab,scale='none', dendrogram='none',col=h.palette, main="Survival Data: Clone ID x Location");
+
+
+
+# WET YIELD DATA
+
+WYield.data<-data.frame(abs(is.na(Willow.data$Wet.Yield..Mg.ha.)-1),Willow.data$Wet.Yield..Mg.ha.,Willow.data$Clone.ID,Willow.data$Location);
+names(WYield.data)<-c("Is.data", "Wet Yield","Clone.ID","Location");
+
+WYield.tab<-xtabs(formula=Is.data~Clone.ID+Location,data=WYield.data);
+heatmap.2(WYield.tab,scale='none', dendrogram='none',col=h.palette, main="Wet Yield Data: Clone ID x Location");
+
+# DRY YIELD DATA
+
+DYield.data<-data.frame(abs(is.na(Willow.data$Dry.Yield..Mg.ha.)-1),Willow.data$Dry.Yield..Mg.ha.,Willow.data$Clone.ID,Willow.data$Location);
+names(DYield.data)<-c("Is.data", "Dry Yield","Clone.ID","Location");
+
+DYield.tab<-xtabs(formula=Is.data~Clone.ID+Location,data=DYield.data);
+heatmap.2(DYield.tab,scale='none', dendrogram='none',col=h.palette, main="Dry Yield Data: Clone ID x Location");
+
+# HEMICELLULOSE
+
+HEMICELLULOSE.data<-data.frame(abs(is.na(Willow.data$X..Hemicellulose)-1),Willow.data$Dry.Yield..Mg.ha.,Willow.data$Clone.ID,Willow.data$Location);
+names(HEMICELLULOSE.data)<-c("Is.data", "X..Hemicellulose","Clone.ID","Location");
+
+HEMICELLULOSE.tab<-xtabs(formula=Is.data~Clone.ID+Location,data=HEMICELLULOSE.data);
+heatmap.2(HEMICELLULOSE.tab,scale='none', dendrogram='none',col=h.palette, main="X HEMICELLULOSE: Clone ID x Location");
 
 
 

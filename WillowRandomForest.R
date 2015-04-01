@@ -66,6 +66,8 @@ Predictor.variables.factors<-c("Clone.ID","Epithet","Family","New.Diversity.Grou
 Response.variables<-c( "Survival....","Surviv.prop","Wet.Yield..Mg.ha.","Biomass...Moisture","Biomass.Moisture.prop","Biomas...dry.matter","Biomass.dry.matter.prop","Dry.Yield..Mg.ha.","Annual.Yield..Mg.ha.yr.","Dry.tons.ac","Dry.tons.ac.yr","X..Hemicellulose","X..Cellulose","X..Lignin", "X..Ash", "Density..g.cm3.", "Hemicellulose.yield", "Cellulose.yield", "Lignin.yield", "Ash.yield");
 
 
+
+
 #conditioning the data for processing
 
 # the data has many missing values that are represented as a ".". Therefore it is needed to locate them and extract the rest of the data
@@ -152,6 +154,12 @@ Willow.data[Willow.data$Ploidy.level=="???",];
 Clone..SAS.sum<-summary(Willow.data$Clone..SAS.);
 
 Clone..SAS.sum[which(Clone..SAS.sum <= 4)];
+
+# Similarly there are a couple of Clone.ID with few entries
+
+Clone.ID.sum<-summary(Willow.data$Clone.ID);
+
+Clone.fewEntries<-names(Clone.ID.sum[which(Clone.ID.sum<= 4)]);
 
 # A few new.Diversity.Group have very few entries as well
 Diversity.sum<-summary(Willow.data$New.Diversity.Group);
@@ -249,23 +257,39 @@ heatmap.2(HEMICELLULOSE.tab,scale='none', dendrogram='none',col=h.palette, main=
 
 
 
+# STARTING RANDOM FOREST ANALYSYS
+
 #first Analysis random Forest
 
 #Yield data without missing values in Yield and the dependent variables
-Yield.data<-Willow.data[!is.na(Willow.data$Yield_Mg_ha_yr),]
+Yield.data<-Willow.data[!is.na(Willow.data$Dry.Yield..Mg.ha.),c(Predictor.variables,Response.variables, "Location","Clone.ID","Epithet","Family","New.Diversity.Group","Ploidy.level","Land.capability.class","LC.subclass" )];
 
-#impute the missing values usinf rfinpute function in random forests, see package description
-Yield.data.imputed<-rfImpute(Yield_Mg_ha_yr~.,data=Yield.data)
+#Remove clones with few entries as the algorith cannot handle cathegorical data with more than 53 levels
+
+
+Yield.data<-Yield.data[!Yield.data$Clone.ID %in% Clone.fewEntries,];
+
+Yield.data<-droplevels(Yield.data);
+
+
+
+Yield.data$Clone.Rev<-
+
+Yield.data<-droplevels(Yield.data$Clone.ID);
+
+
+#impute the missing values using rfinpute function in random forests, see package description
+Yield.data.imputed<-rfImpute(Dry.Yield..Mg.ha.~.,data=Yield.data);
 
 #run Random Forest on with yield data as a response variable
-RF.Yield<-randomForest(Yield_Mg_ha_yr~.,data=Yield.data.imputed, mtry=5, ntree=500,importance=T, proximity=T)
+RF.Yield<-randomForest(Dry.Yield..Mg.ha.~.,data=Yield.data.imputed, mtry=5, ntree=500,importance=T, proximity=T);
 
 plot(RF.Yield)
 
-MDSplot(RF.Yield, Yield.data.imputed$Yield_Mg_ha_yr, k=4)
+MDSplot(RF.Yield, Yield.data.imputed$Dry.Yield..Mg.ha., k=4)
 
 
-MDSplot(RF.Yield, Yield.data.imputed$Yield_Mg_ha_yr, pch=unclass(Yield.data.imputed$Yield_Mg_ha_yr))
+MDSplot(RF.Yield, Yield.data.imputed$Dry.Yield..Mg.ha., pch=unclass(Yield.data.imputed$Yield_Mg_ha_yr))
 
 
 

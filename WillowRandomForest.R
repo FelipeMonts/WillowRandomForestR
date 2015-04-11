@@ -52,15 +52,15 @@ str(Willow.data);
 # Split the Trial.ID information based on the character "_" i.e: "BellevilleNY_2005_YT" results in a three component list "BellevilleNY" "2005"         "YT". 
 Location<-strsplit(as.character(Willow.data$Trial.ID), "_");
 
-# Extracting the first component in the list Location and addig to the data frame
+# Extracting the first component in the list Location and adding to the data frame
 
 Willow.data$Location<-sapply(Location, "[[", 1);
 
 # Group the variables into predictive variables and Response Variables
 
-Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.", "Location","Rep","Comments");
+Descriptor.variables<-c("Establish.Year","Harvest.Year","Trial.ID","Site..SAS.","Elevation..m.", "Location","Rep","Comments");
 
-Predictor.variables<-c("X..Organic.Matter", "Soil.pH", "X.H..", "Soil.P..mg.kg.", "Soil.K..mg.kg.", "Soil.Ca..mg.kg.","Soil.Mg..mg.kg.", "Soil.Fe..mg.kg.", "Soil.Mn..mg.kg.", "Soil.Zn..mg.kg.","Soil.Al..mg.kg.", "Mean.ann.prcp..mm.", "Mean.ann.GDD..base.10oC.", "Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.", "Annual.Tmin..oC.", "Depth.to.water.table.low.cm.", "Depth.to.Water.Table.high.cm.", "Available.water.capacity..cm.cm."); #, "Height..m.", "Area.per.plot..cm2.");
+Predictor.variables<-c("X..Organic.Matter", "Soil.pH", "X.H..", "Soil.P..mg.kg.", "Soil.K..mg.kg.", "Soil.Ca..mg.kg.","Soil.Mg..mg.kg.", "Soil.Fe..mg.kg.", "Soil.Mn..mg.kg.", "Soil.Zn..mg.kg.","Soil.Al..mg.kg.", "Mean.ann.prcp..mm.", "Mean.ann.GDD..base.10oC.", "Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.", "Annual.Tmin..oC.", "Annual.solar.radiation..MJ.m.1.day.1.", "Solar.radiation..Apr.Oct..MJ.m.1.d.1.","Depth.to.water.table.low.cm.", "Depth.to.Water.Table.high.cm.", "Available.water.capacity..cm.cm."); #, "Height..m.", "Area.per.plot..cm2.");
 
 Predictor.variables.factors<-c("Clone.ID","Epithet","Family","New.Diversity.Group","Clone..SAS.","Ploidy.level","Land.capability.class","LC.subclass");
 Response.variables<-c( "Survival....","Surviv.prop","Wet.Yield..Mg.ha.","Biomass...Moisture","Biomass.Moisture.prop","Biomas...dry.matter","Biomass.dry.matter.prop","Dry.Yield..Mg.ha.","Annual.Yield..Mg.ha.yr.","Dry.tons.ac","Dry.tons.ac.yr","X..Hemicellulose","X..Cellulose","X..Lignin", "X..Ash", "Density..g.cm3.", "Hemicellulose.yield", "Cellulose.yield", "Lignin.yield", "Ash.yield");
@@ -259,70 +259,77 @@ heatmap.2(HEMICELLULOSE.tab,scale='none', dendrogram='none',col=h.palette, main=
 
 # STARTING RANDOM FOREST ANALYSYS
 
-#first Analysis random Forest
+# first Analysis random Forest
 
-#Yield data without missing values in Yield and the dependent variables
+# Yield data without missing values in Yield and the dependent variables
 Yield.data<-Willow.data[!is.na(Willow.data$Dry.Yield..Mg.ha.),c(Predictor.variables,Response.variables, "Location","Clone.ID","Epithet","Family","New.Diversity.Group","Ploidy.level","Land.capability.class","LC.subclass" )];
 
-#Remove clones with few entries as the algorith cannot handle cathegorical data with more than 53 levels
+# Remove clones with few entries as the algorith cannot handle cathegorical data with more than 53 levels
 
 
 Yield.data<-Yield.data[!Yield.data$Clone.ID %in% Clone.fewEntries,];
 
+# The line above remove the data that correspond to clones with few entries "Clone.fewEntries", but the levels of the factor Clone.ID still are considered part of the Yield.data$Clone.ID factor, even though they have "0" (zero) entries. To get rid of these levels use the function droplevels which drop any levels that are not used
+
 Yield.data<-droplevels(Yield.data);
 
+# impute the missing values using rfinpute function in random forests, see package description
+Yield.data.imputed<-rfImpute(Annual.Yield..Mg.ha.yr.~.,data=Yield.data);
+
+# run Random Forest on with yield data as a response variable
+RF.Yield<-randomForest(Annual.Yield..Mg.ha.yr.~.,data=Yield.data.imputed, mtry=5, ntree=500,importance=T, proximity=T);
+
+plot(RF.Yield);
+
+# Varible importance plots
+
+barchart(sort(importance(RF.Yield)[,1],decreasing=F), main="Variable importance, % Increase MSE", xlab="%IncMSE");
+barchart(sort(importance(RF.Yield)[,2],decreasing=F), main="Variable importance, IncNodePurity",xlab="IncNodePurity ");
+
+# plot scatter plot matrix of Response.variables
+pairs(Willow.data[,names(Yield.data.imputed)[1:20]],col="BLUE");
+
+# The initial random forest results with all variables explaining yield, indicated that obiously correlated variables (wet yield, ash yield, ligning yield) were the most important. This is not unexpected but for sure is of no use. A more useful result would be obtained when these correlated variables are not included in the analaysis. Also, since location determines, soil  pH, and all the other soil varaibles, allthose variables are correlated and should not be at the same time in the analysis
+
+# Use only uncorrelated variables in the random forest analysys
+
+Yield.data.imputed.1<-Yield.data.imputed[,c("Annual.Yield..Mg.ha.yr.","Mean.ann.prcp..mm.","Mean.ann.GDD..base.10oC.","Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.","Annual.Tmin..oC.","Annual.solar.radiation..MJ.m.1.day.1.","Solar.radiation..Apr.Oct..MJ.m.1.d.1.","Depth.to.water.table.low.cm.","Depth.to.Water.Table.high.cm.","Available.water.capacity..cm.cm.","Survival....","Biomass...Moisture","Biomas...dry.matter","X..Hemicellulose","X..Cellulose","X..Lignin","X..Ash","Density..g.cm3.","Location","Clone.ID","Epithet","Family","New.Diversity.Group","Ploidy.level")];
 
 
-Yield.data$Clone.Rev<-
 
-Yield.data<-droplevels(Yield.data$Clone.ID);
+# Random forests for Yield and uncorrelated variables 
+
+RF.Yield.1<-randomForest(Annual.Yield..Mg.ha.yr.~.,data=Yield.data.imputed.1, mtry=5, ntree=1000,importance=T, proximity=T);
+
+barchart(sort(importance(RF.Yield.1)[,1],decreasing=F), main="Yield_Variable importance, % Increase MSE", xlab="%IncMSE");
+barchart(sort(importance(RF.Yield.1)[,2],decreasing=F), main="Yield_Variable importance, IncNodePurity",xlab="IncNodePurity ");
+
+# importance of each class on the predictor variables
+
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Location");
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="X..Lignin"); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Clone.ID");
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="X..Cellulose"); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Epithet");
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Survival...."); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Tmax..April.Oct.oC."); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Family");
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="X..Ash"); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Annual.solar.radiation..MJ.m.1.day.1."); # Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Solar.radiation..Apr.Oct..MJ.m.1.d.1.");# Worth exploring further
+partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Mean.ann.GDD..base.10oC.");# Worth exploring further
 
 
-#impute the missing values using rfinpute function in random forests, see package description
-Yield.data.imputed<-rfImpute(Dry.Yield..Mg.ha.~.,data=Yield.data);
 
-#run Random Forest on with yield data as a response variable
-RF.Yield<-randomForest(Dry.Yield..Mg.ha.~.,data=Yield.data.imputed, mtry=5, ntree=500,importance=T, proximity=T);
-
-plot(RF.Yield)
-
-MDSplot(RF.Yield, Yield.data.imputed$Dry.Yield..Mg.ha., k=4)
+# Exploring further the results of the predictor importance results
 
 
-MDSplot(RF.Yield, Yield.data.imputed$Dry.Yield..Mg.ha., pch=unclass(Yield.data.imputed$Yield_Mg_ha_yr))
-
-
-
-#Varible importance plots
-
-barchart(sort(importance(RF.Yield)[,1],decreasing=F), main="Variable importance, % Increase MSE", xlab="%IncMSE")
-barchart(sort(importance(RF.Yield)[,2],decreasing=F), main="Variable importance, IncNodePurity",xlab="IncNodePurity ")
-
-#plot scatter plot matrix of Response.variables
-pairs(Willow.data[,Response.variables],col="BLUE")
-
-##plot scatter plot matrix of Lignin, Cellulose, Ash and Yield 
-
-pairs(Willow.data[,c("Cellulose","Lignin","Ash","Yield_Mg_ha_yr","Moisture")],col="RED")
-
-#Random forests for Yield as the only response varible
-RF.Yield.1<-randomForest(Yield_Mg_ha_yr~.,data=Yield.data.imputed[,c("Hemicellulose","Density_g_cm3","Yield_Mg_ha_yr","Moisture",Dependent.variables)], mtry=5, ntree=1000,importance=T, proximity=T)
-
-barchart(sort(importance(RF.Yield.1)[,1],decreasing=F), main="Yield_Variable importance, % Increase MSE", xlab="%IncMSE")
-barchart(sort(importance(RF.Yield.1)[,2],decreasing=F), main="Yield_Variable importance, IncNodePurity",xlab="IncNodePurity ")
-
-#importance of each class on the predictor variables
-
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Site")
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Clone")
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Moisture")
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Soil_Potassium")
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Soil_Calcium")
-partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Year")
-
+pairs(Yield.data.imputed[,c("Dry.Yield..Mg.ha.","X..Lignin","X..Cellulose","Survival....","Tmax..April.Oct.oC.","X..Ash","Annual.solar.radiation..MJ.m.1.day.1.","Solar.radiation..Apr.Oct..MJ.m.1.d.1.")],col='BLUE');
 
 dim(Willow.data[Willow.data$Year==2009,])
 histogram(Willow.data$Year)
+
+MDSplot(RF.Yield, Yield.data.imputed$Location);
 
 ##run Random Forest on with Lignin data as a response variable
 

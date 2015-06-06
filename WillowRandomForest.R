@@ -331,7 +331,9 @@ barchart(sort(importance(RF.Yield.1)[,2],decreasing=F), main="Yield_Variable imp
 #     importance of each class on the predictor variables
 
 partialPlot(RF.Yield.1,Yield.data.imputed.1,x.var="Location");  #  It seems location has very little to do in partitioning yield
+
 partialPlot(RF.Yield.1,Yield.data.imputed.1,x.var="X..Lignin"); # Worth exploring further
+
 partialPlot(RF.Yield.1,Yield.data.imputed.1,x.var="Clone.ID");  # Clone appears not to important in partitioning Yield neither
 
 partialPlot(RF.Yield.1,Yield.data.imputed.1,x.var="X..Cellulose"); # Worth exploring further and is opposite to lignin. 
@@ -369,24 +371,31 @@ partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Mean.ann.GDD..base.10oC.");# Wo
 par(mar=c(10,4,4,2));
 plot(Yield.data.imputed.1$Location,Yield.data.imputed.1$Mean.ann.GDD..base.10oC.,main='Mean.ann.GDD..base.10oC at each location',las=2);
 
-# Exploring the "margin" feature on random forest
+#       Exploring the "margin" feature on random forest
 
 plot(margin(RF.Yield.1))  # Error in margin.randomForest(RF.Yield.1) : margin not defined for regression Random Forests
 
 
+#       Exploring further the results of the predictor importance results
 
 
-# Exploring further the results of the predictor importance results
+pairs(Yield.data.imputed.1[,c("Annual.Yield..Mg.ha.yr.","X..Lignin","X..Cellulose","Survival....","Tmax..April.Oct.oC.","X..Ash","Annual.solar.radiation..MJ.m.1.day.1.","Solar.radiation..Apr.Oct..MJ.m.1.d.1.")],col='BLUE');
+
+histogram(Willow.data$Establish.Year); 
+
+histogram(Willow.data$Harvest.Year); 
+
+
+#     Using multi dimnesional scaling plot to visualize location relationship to location
+
+Location_MSD<-MDSplot(RF.Yield.1, Yield.data.imputed.1$Location, palette=brewer.pal(14,"Paired"));
+
+#     Add legend to the plot
+
+legend("topright", col=2,legend=levels(Yield.data.imputed.1$Location),fill=brewer.pal(14,"Paired"),cex=0.75);
 
 
 
-
-pairs(Yield.data.imputed[,c("Dry.Yield..Mg.ha.","X..Lignin","X..Cellulose","Survival....","Tmax..April.Oct.oC.","X..Ash","Annual.solar.radiation..MJ.m.1.day.1.","Solar.radiation..Apr.Oct..MJ.m.1.d.1.")],col='BLUE');
-
-dim(Willow.data[Willow.data$Year==2009,])
-histogram(Willow.data$Year)
-
-MDSplot(RF.Yield, Yield.data.imputed$Location);
 
 ##run Random Forest on with Lignin data as a response variable
 

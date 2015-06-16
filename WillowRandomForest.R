@@ -285,13 +285,15 @@ heatmap.2(HEMICELLULOSE.tab,scale='none', dendrogram='none',col=h.palette, main=
 
 # ***********************************************STARTING RANDOM FOREST ANALYSYS*****************************************************
 
+
+#************************************************** yield data ********************************************************************
 #     first Analysis random Forest
 
 #     Yield data without missing values in Yield and the dependent variables
 
 Yield.data<-Willow.data[!is.na(Willow.data$Dry.Yield..Mg.ha.),c(Predictor.variables,Response.variables, "Location","Clone.ID","Epithet","Family","New.Diversity.Group","Ploidy.level","Land.capability.class","LC.subclass" )];
 
-#     Remove clones with few entries as the algorith cannot handle cathegorical data with more than 53 levels
+#     Remove clones with few entries as the algorithm cannot handle cathegorical data with more than 53 levels
 
 
 Yield.data<-Yield.data[!Yield.data$Clone.ID %in% Clone.fewEntries,];
@@ -369,11 +371,13 @@ partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Solar.radiation..Apr.Oct..MJ.m.
 partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Mean.ann.GDD..base.10oC.");# Worth exploring further
 
 par(mar=c(10,4,4,2));
+
+
 plot(Yield.data.imputed.1$Location,Yield.data.imputed.1$Mean.ann.GDD..base.10oC.,main='Mean.ann.GDD..base.10oC at each location',las=2);
 
 #       Exploring the "margin" feature on random forest
 
-plot(margin(RF.Yield.1))  # Error in margin.randomForest(RF.Yield.1) : margin not defined for regression Random Forests
+#   plot(margin(RF.Yield.1))  # Error in margin.randomForest(RF.Yield.1) : margin not defined for regression Random Forests
 
 
 #       Exploring further the results of the predictor importance results
@@ -386,14 +390,155 @@ histogram(Willow.data$Establish.Year);
 histogram(Willow.data$Harvest.Year); 
 
 
-#     Using multi dimnesional scaling plot to visualize location relationship to location
+#     Using multi dimnesional scaling plot to visualize yield relationship to location
 
-Location_MSD<-MDSplot(RF.Yield.1, Yield.data.imputed.1$Location, palette=brewer.pal(14,"Paired"));
+#     List of Colors used to distinguish locations
+
+par(mar=c(5.1,4,4,2));
+
+Col.Loc<-colors()[c(31,28, 35,49,81,113,154,430,505,655,142,491,621)];
+
+Location_MSD<-MDSplot(RF.Yield.1, Yield.data.imputed.1$Location, palette=Col.Loc, main="Yield:MDS-location"); #palette=brewer.pal(14,"Paired")
 
 #     Add legend to the plot
 
-legend("topright", col=2,legend=levels(Yield.data.imputed.1$Location),fill=brewer.pal(14,"Paired"),cex=0.75);
+legend("bottomleft",legend=levels(Yield.data.imputed.1$Location),fill=Col.Loc,cex=0.70);
 
+
+
+#     Using multi dimensional scaling plot to visualize yield relationship to clone
+
+#     Setting the cololrs for the figure
+
+No.Clones<-length(levels(Yield.data.imputed.1$Clone.ID));
+
+Col.Clones<-ceiling(runif(No.Clones,1,152));
+
+
+Clone_MSD<-MDSplot(RF.Yield.1, Yield.data.imputed.1$Clone.ID , palette=Col.Clones, main="Yield:MDS-Clone");
+
+
+legend("bottomleft",legend=levels(Yield.data.imputed.1$Clone.ID), ncol=3 , fill=Col.Clones ,cex=0.40);
+
+
+
+#************************************************** clone data ********************************************************************
+
+
+#          Using clone to do classification random forest analysis 
+
+
+#          Clone data without missing values variables
+
+Clone.data<-Willow.data[!is.na(Willow.data$Clone.ID),]; 
+
+#         The variable Od.volume..m3 was read as a Character because some missing values are represented as ".". This variable has many values missing, therefore is dropped out from the analysis
+
+Clone.data<-Clone.data[,!names(Clone.data) %in% c('Od.volume..m3.')];
+
+
+#          Remove clones with few entries as random forest cannot deal with factors that have more than 53 levels
+
+Clone.data<-Clone.data[!Clone.data$Clone.ID %in% Clone.fewEntries,]; 
+
+#           The line above remove the data that correspond to clones with few entries "Clone.fewEntries", but the levels of the factor Clone.ID still are considered part of the Clone.data$Clone.ID factor, even though they have "0" (zero) entries. To get rid of these levels use the function droplevels which drop any levels that are not used
+
+Clone.data<-droplevels(Clone.data);
+
+
+
+# remove the variable Clone..SAS..
+
+
+Clone.data<-Clone.data[,!names(Clone.data) %in% c('Clone..SAS.')];
+
+
+
+Clone.data.inputed<-rfImpute(Clone.ID ~ ., Clone.data);
+
+
+#     Use only uncorrelated variables in the random forest analysys
+
+
+Clone.data.inputed<-Clone.data.inputed[,c("Annual.Yield..Mg.ha.yr.","Mean.ann.prcp..mm.","Mean.ann.GDD..base.10oC.","Prcp..April.Oct..mm.", "Tmax..April.Oct.oC.","Annual.Tmin..oC.","Annual.solar.radiation..MJ.m.1.day.1.","Solar.radiation..Apr.Oct..MJ.m.1.d.1.","Depth.to.water.table.low.cm.","Depth.to.Water.Table.high.cm.","Available.water.capacity..cm.cm.","Survival....","Biomass...Moisture","Biomas...dry.matter","X..Hemicellulose","X..Cellulose","X..Lignin","X..Ash","Density..g.cm3.","Location","Clone.ID","Epithet","Family","New.Diversity.Group","Ploidy.level")];
+
+
+#      run Random Forest on with Clone data as a response variable
+RF.Clone<-randomForest(Clone.ID~.,data=Clone.data.inputed, mtry=5, ntree=500,importance=T, proximity=T);
+
+
+#      Plot random forest classification eeror as a function of number of trees
+plot(RF.Yield);
+
+
+
+#     Variable importance plots
+
+barchart(sort(importance(RF.Clone)[,1],decreasing=F), main="Variable importance, % Increase MSE, Clone.ID", xlab="%IncMSE");
+barchart(sort(importance(RF.Clone)[,2],decreasing=F), main="Variable importance, IncNodePurity. Clone.ID",xlab="IncNodePurity ");
+
+#     Colors for the Ploidy Level
+
+Col.Ploid<-colors()[c(34,26,139)];
+
+
+#     Multidimensional scaling plot of the proximity matrix colored by ploidy level
+
+MDSplot(RF.Clone , Clone.data.inputed$Ploidy.level, palette=Col.Ploid, main="Random Forest Clone.ID");
+
+legend("bottomleft",legend=levels(Clone.data.inputed$Ploidy.level), fill=Col.Ploid ,cex=1);
+
+
+#     Multidimensional scaling plot of the proximity matrix colored by Diversity Group
+
+Col.Div<-length(levels(Clone.data.inputed$New.Diversity.Group));
+
+MDSplot(RF.Clone , Clone.data.inputed$New.Diversity.Group, palette=brewer.pal(Col.Div,"Paired"), main="Random Forest Clone.ID");
+
+legend("bottomleft",legend=levels(Clone.data.inputed$New.Diversity.Group), fill=brewer.pal(Col.Div,"Paired") ,cex=1);
+
+
+
+plot(margin(RF.Clone))
+
+
+
+
+
+
+
+
+
+
+#importance of each class on the predictor variables
+
+partialPlot(RF.Clone, Clone.data.imputed,x.var="Yield_Mg_ha_yr")
+bwplot(Clone~Yield_Mg_ha_yr, Willow.data,main="summary of Yield By clone", Ylab="Yield_Mg_ha_yr")
+panel.abline(v=322,col="RED")
+
+
+partialPlot(RF.Clone, Clone.data.imputed,x.var="Density_g_cm3")
+bwplot(Clone~Density_g_cm3, Willow.data,main="summary of Density By clone", Ylab="Density_g_cm3")
+panel.abline(v=270,col="RED")
+
+
+partialPlot(RF.Clone, Clone.data.imputed,x.var="Moisture")
+bwplot(Clone~Moisture, Willow.data,main="summary of Moisture By clone", Ylab="Moisture")
+panel.abline(v=363,col="RED")
+
+partialPlot(RF.Clone, Clone.data.imputed,x.var="Cellulose")
+bwplot(Clone~Cellulose, Willow.data,main="summary of Cellulose By clone", Ylab="Cellulose")
+panel.abline(v=353,col="RED")
+panel.abline(v=515,col="RED")
+
+partialPlot(RF.Clone, Clone.data.imputed,x.var="Lignin")
+bwplot(Clone~Cellulose, Willow.data,main="summary of lignin By clone", xlab="Lignin")
+
+
+MDSplot(RF.Clone, Clone.data.imputed$Clone, k=4)
+
+
+MDSplot(RF.Clone, Clone.data.imputed$Clone, pch=unclass(Clone.data.imputed$Clone))
 
 
 
@@ -506,50 +651,4 @@ partialPlot(RF.Cellulose.1,Cellulose.data.imputed,x.var="Moisture")
 partialPlot(RF.Yield.1,Yield.data.imputed,x.var="Soil_Magnesium")
 
 
-#Clone data without missing values variables
-Clone.data<-Willow.data[!is.na(Willow.data$Clone),]
-
-#impute the missing values usin rfinpute function in random forests, see package description
-Clone.data.imputed<-rfImpute(Clone~.,data=Clone.data)
-
-#run Random Forest on with Clone data as a response variable
-RF.Clone<-randomForest(Clone~.,data=Clone.data.imputed, mtry=5, ntree=500,importance=T, proximity=T)
-
-
-#Varible importance plots
-
-barchart(sort(importance(RF.Clone)[,1],decreasing=F), main="Variable importance, % Increase MSE", xlab="%IncMSE")
-barchart(sort(importance(RF.Clone)[,2],decreasing=F), main="Variable importance, IncNodePurity",xlab="IncNodePurity ")
-
-
-
-#importance of each class on the predictor variables
-
-partialPlot(RF.Clone, Clone.data.imputed,x.var="Yield_Mg_ha_yr")
-bwplot(Clone~Yield_Mg_ha_yr, Willow.data,main="summary of Yield By clone", Ylab="Yield_Mg_ha_yr")
-panel.abline(v=322,col="RED")
-
-
-partialPlot(RF.Clone, Clone.data.imputed,x.var="Density_g_cm3")
-bwplot(Clone~Density_g_cm3, Willow.data,main="summary of Density By clone", Ylab="Density_g_cm3")
-panel.abline(v=270,col="RED")
-
-
-partialPlot(RF.Clone, Clone.data.imputed,x.var="Moisture")
-bwplot(Clone~Moisture, Willow.data,main="summary of Moisture By clone", Ylab="Moisture")
-panel.abline(v=363,col="RED")
-
-partialPlot(RF.Clone, Clone.data.imputed,x.var="Cellulose")
-bwplot(Clone~Cellulose, Willow.data,main="summary of Cellulose By clone", Ylab="Cellulose")
-panel.abline(v=353,col="RED")
-panel.abline(v=515,col="RED")
-
-partialPlot(RF.Clone, Clone.data.imputed,x.var="Lignin")
-bwplot(Clone~Cellulose, Willow.data,main="summary of lignin By clone", xlab="Lignin")
-
-
-MDSplot(RF.Clone, Clone.data.imputed$Clone, k=4)
-
-
-MDSplot(RF.Clone, Clone.data.imputed$Clone, pch=unclass(Clone.data.imputed$Clone))
 

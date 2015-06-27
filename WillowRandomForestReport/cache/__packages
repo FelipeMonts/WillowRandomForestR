@@ -1,0 +1,11 @@
+base
+knitr
+XLConnectJars
+XLConnect
+randomForest
+boot
+lattice
+RColorBrewer
+gplots
+ggplot2
+xtable

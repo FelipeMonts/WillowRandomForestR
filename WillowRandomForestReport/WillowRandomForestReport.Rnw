@@ -33,7 +33,7 @@ source('WillowRandomForestChunks.R')
 
 \section*{Introduction}
 
-The following random forest analysis was based on the Willow Experimental database that Eric passed to me on 03/18/2015. It is not know the database in detail, therefore the firsts steps in the analysis are on understanding the data base, where gaps are, identifying mistakes and typos and cleaning the database for further analysis.
+The following random forest analysis was based on the Willow Experimental database that Eric passed to me on 03/18/2015. I did not know the database in detail, therefore the firsts steps in the analysis are on understanding the data base, where gaps are, identifying mistakes and typos and cleaning the database for further analysis.
 
 
 
